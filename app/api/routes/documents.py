@@ -1,7 +1,8 @@
+from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -22,6 +23,11 @@ class DocumentOut(BaseModel):
     content: str
     created_at: str
 
+class DocumentListOut(BaseModel):
+    items: List[DocumentOut]
+    limit: int
+    offset: int
+    count: int
 
 @router.post("")
 def create_document(payload: DocumentCreate, db: Session = Depends(get_db)):
@@ -52,3 +58,29 @@ def get_document(id: UUID, db: Session = Depends(get_db)):
         "created_at": document.created_at.isoformat(),
 
     }
+
+@router.get("", response_model=DocumentListOut)
+def list_document(limit:int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0), db: Session = Depends(get_db)):
+    count_statement = select(func.count()).select_from(Document)
+    total = db.execute(count_statement).scalar_one()
+
+    statement = select(Document).order_by(Document.created_at.desc()).limit(limit).offset(offset)
+    document = db.execute(statement).scalars(all)
+
+    return {
+        "items": [ 
+            {
+            "id": str(doc.id),
+            "title": doc.title,
+            "description": doc.description,
+            "content": doc.content,
+            "created_at": doc.created_at.isoformat(),
+            }
+            for doc in document
+        ],
+        "limit": limit,
+        "offset": offset,
+        "count": total,
+    }
+
+

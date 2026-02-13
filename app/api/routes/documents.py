@@ -99,8 +99,8 @@ def create_analysis_job(
     payload: AnalysisJobCreate,
     db: Session = Depends(get_db),
 ):
-    doc = db.execute(select(Document).where(Document.id == document_id)).scalar_one_or_none()
-    if doc is None:
+    document = db.execute(select(Document).where(Document.id == document_id)).scalar_one_or_none()
+    if document is None:
         raise HTTPException(status_code=404, detail="Document not found!")
 
     job = AnalysisJob(

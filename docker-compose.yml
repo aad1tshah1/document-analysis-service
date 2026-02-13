@@ -32,7 +32,7 @@ services:
     depends_on:
       - db
     command: >
-      python -m app.workers.analyze_document
+      python -m app.workers.analyse_document
 
 volumes:
   pgdata:
